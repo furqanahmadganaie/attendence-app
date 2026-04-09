@@ -1,0 +1,11 @@
+services:
+  api:
+    image: ${IMAGE_NAME:-attendence-api:latest}
+    container_name: attendence-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${PORT:-5000}:${PORT:-5000}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

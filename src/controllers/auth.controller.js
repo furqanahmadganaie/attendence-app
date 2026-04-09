@@ -1,26 +1,39 @@
-import { loginUser } from "../services/auth.service.js";
+import {
+  loginUser,
+  requestRegistrationOtp,
+  verifyRegistrationOtp
+} from "../services/auth.service.js";
+import { AppError } from "../utils/app-error.js";
+import { asyncHandler } from "../utils/async-handler.js";
 
-export const login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
+export const register = asyncHandler(async (req, res) => {
+  const { email, password } = req.validatedBody;
+  const result = await requestRegistrationOtp({ email, password });
 
-    if (!email || !password) {
-      return res.status(400).json({ message: "Email and password required" });
-    }
+  res.status(200).json(result);
+});
 
-    const user = await loginUser(email, password);
+export const verifyRegistration = asyncHandler(async (req, res) => {
+  const { email, otp } = req.validatedBody;
+  const user = await verifyRegistrationOtp({ email, otp });
 
-    if (!user) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
+  res.status(201).json({
+    message: "Registration successful",
+    user
+  });
+});
 
-    res.status(200).json({
-      message: "Login successful",
-      user
-    });
+export const login = asyncHandler(async (req, res) => {
+  const { email, password } = req.validatedBody;
 
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
+  const user = await loginUser({ email, password });
+
+  if (!user) {
+    throw new AppError("Invalid email or password", 401);
   }
-};
+
+  res.status(200).json({
+    message: "Login successful",
+    user
+  });
+});
