@@ -1,5 +1,8 @@
 services:
   api:
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: ${IMAGE_NAME:-attendence-api:latest}
     container_name: attendence-api
     restart: unless-stopped

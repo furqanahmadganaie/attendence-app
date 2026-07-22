@@ -1,10 +1,13 @@
 import express from "express";
 import cors from "cors";
-import { closeDatabaseConnection, testDatabaseConnection } from "./src/config/db.js";
+import { closeDatabaseConnection, testDatabaseConnection } from "./src/database/db.js";
 import { env } from "./src/config/env.js";
 import authRoutes from "./src/routes/auth.routes.js";
-import { ensureAuthInfrastructure } from "./src/services/auth.service.js";
-import { errorHandler, notFoundHandler} from "./src/middleware/error.middleware.js";
+import adminLeaveRoutes from "./src/routes/admin-leave.routes.js";
+import attendanceRoutes from "./src/routes/attendance.routes.js";
+import leaveRoutes from "./src/routes/leave.routes.js";
+import profileRoutes from "./src/routes/profile.routes.js";
+import holidaysRoutes from "./src/routes/holidays.routes.js";
 
 const app = express();
 
@@ -27,8 +30,35 @@ app.get("/health", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
-app.use(notFoundHandler);
-app.use(errorHandler);
+app.use("/api/admin/leaves", adminLeaveRoutes);
+app.use("/api/attendance", attendanceRoutes);
+app.use("/api/leaves", leaveRoutes);
+app.use("/api/profile", profileRoutes);
+app.use("/api/holidays", holidaysRoutes);
+
+
+app.use((req, res) => {
+  res.status(404).json({
+    message: `Route not found: ${req.method} ${req.originalUrl}`
+  });
+});
+
+app.use((error, req, res, next) => {
+  if (error?.type === "entity.parse.failed") {
+    return res.status(400).json({
+      message: "Invalid JSON body"
+    });
+  }
+
+  console.error(
+    `[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`,
+    error
+  );
+
+  return res.status(500).json({
+    message: "Internal server error"
+  });
+});
 
 let server;
 
@@ -51,7 +81,6 @@ const shutdown = async (signal) => {
 const startServer = async () => {
   try {
     await testDatabaseConnection();
-    await ensureAuthInfrastructure();
 
     server = app.listen(env.port, () => {
       console.log(`Server running on port ${env.port}`);
